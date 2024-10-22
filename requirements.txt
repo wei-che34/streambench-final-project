@@ -1,0 +1,14 @@
+gdown
+colorama
+faiss-cpu
+func-timeout
+torch
+transformers
+datasets
+tqdm
+evaluate
+scikit-learn
+accelerate
+bitsandbytes
+protobuf
+sentencepiece
