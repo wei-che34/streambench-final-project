@@ -1,11 +1,24 @@
 # Model List
 You can only use the following model checkpoints to initialize your LLM agent:
+
+## Tested Models
+We have tested the following models: (see **"Baseline Performance"** below for more details)
 * Qwen/Qwen2.5-7B-Instruct
 * meta-llama/Llama-3.1-8B-Instruct
 * prince-canuma/Ministral-8B-Instruct-2410-HF
 
+## Not Tested Models
+* Qwen/Qwen2.5-1.5B-Instruct
+* Qwen/Qwen2.5-0.5B-Instruct
+* meta-llama/Llama-3.2-3B-Instruct
+* meta-llama/Llama-3.2-1B-Instruct
+* mistralai/Ministral-8B-Instruct-2410
+* mistralai/Mistral-7B-Instruct-v0.3
+* google/gemma-2-2b-it
+* google/gemma-2-9b-it
+
 ## Baseline Performance
-Here are the baseline performance (and total inference time in minutes on a single NVIDIA 3090 GPU) of different models for the public datasets.
+Here are the baseline performance (and total inference time in minutes on a single NVIDIA 3090 GPU) of different models for the public datasets. (Currently, we only tested the following 3 models)
 * Qwen/Qwen2.5-7B-Instruct
 
 | Task Type     | Classification (max_token = 16) | SQL Generation (max_token = 512) |
