@@ -312,6 +312,7 @@ if __name__ == "__main__":
     parser.add_argument('--device', type=str, default="cuda:0")
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--use_8bit', action='store_true')
+    parser.add_argument('--output_path', type=str, default=None, help='path to save csv file for kaggle submission')
     args = parser.parse_args()
 
     if args.bench_name.startswith("classification"):
@@ -324,7 +325,8 @@ if __name__ == "__main__":
         raise ValueError(f"Invalid benchmark name: {args.bench_name}")
     # Classification: Medical diagnosis; SQL generation: Text-to-SQL
     bench_cfg = {
-        'bench_name': args.bench_name
+        'bench_name': args.bench_name,
+        'output_path': args.output_path
     }
     llm_config = {
         'model_name': args.model_name,

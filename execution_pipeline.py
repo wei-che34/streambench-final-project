@@ -48,6 +48,11 @@ def main(agent, bench_cfg, debug: bool = False, debug_samples: int = 10):
 
     metrics = bench.get_metrics()
     print(metrics)
+
+    output_path = bench_cfg.get("output_path", None)
+    if output_path is not None:
+        bench.save_output(output_path)
+
     return metrics
 
 if __name__ == "__main__":

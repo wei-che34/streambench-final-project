@@ -22,21 +22,46 @@ def execute_sql(predicted_sql, ground_truth, db_path, show_num_rows=10):
     res = 0
     if set(predicted_res) == set(ground_truth_res):
         res = 1
-    return res, pred_md_table, gt_md_table
+    
+    return {
+        "res": res, 
+        "predicted_res": predicted_res,
+        "ground_truth_res": ground_truth_res,
+        "pred_md_table": pred_md_table, 
+        "gt_md_table": gt_md_table
+    }
 
 def execute_model(predicted_sql, ground_truth, db_path, meta_time_out=30):
-    pred_md_table, gt_md_table = '', ''
+    # Initialize results
+    result = {
+        "res": 0,
+        "predicted_res": '',
+        "ground_truth_res": '',
+        "pred_md_table": '',
+        "gt_md_table": ''
+    }
+
     try:
-        res, pred_md_table, gt_md_table = func_timeout(meta_time_out, execute_sql,
-                            args=(predicted_sql, ground_truth, db_path)
-                        )
-        result = pred_md_table
+        # Execute SQL with timeout
+        res_dict = func_timeout(
+            meta_time_out, execute_sql,
+            args=(predicted_sql, ground_truth, db_path)
+        )
+        
+        # Update result dictionary with returned values
+        result.update({
+            "res": res_dict.get('res', 0),
+            "predicted_res": res_dict.get('predicted_res', ''),
+            "ground_truth_res": res_dict.get('ground_truth_res', ''),
+            "pred_md_table": res_dict.get('pred_md_table', ''),
+            "gt_md_table": res_dict.get('gt_md_table', '')
+        })
+        
     except KeyboardInterrupt:
         sys.exit(0)
     except FunctionTimedOut:
-        result = 'Database execution timeout'
-        res = 0
+        result["predicted_res"] = 'Database execution timeout'
     except Exception as e:
-        result = str(e)
-        res = 0
-    return res, (result, gt_md_table)
+        result["predicted_res"] = str(e)
+    
+    return result

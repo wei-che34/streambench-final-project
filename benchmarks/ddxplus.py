@@ -1,4 +1,6 @@
 import re
+import pandas as pd
+import os
 import evaluate
 from datasets import Dataset
 from colorama import Fore, Style
@@ -102,6 +104,17 @@ class MedicalDiagnosisBench(Bench):
             label_int = self.TEXT2LABEL[label.lower()]
             label_str = label
         return f"{label_int}. {label_str}"
+
+    def save_output(self, output_path):
+        df = pd.DataFrame({
+            "id": [i for i in range(len(self.predictions))],
+            "result": self.predictions
+        })
+
+        # Ensure the parent directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        df.to_csv(output_path, index=False)
 
 def create_ddxplus():
     class DDXPlusBench(MedicalDiagnosisBench):

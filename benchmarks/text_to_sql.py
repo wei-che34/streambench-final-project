@@ -1,4 +1,6 @@
 import os
+import hashlib
+import pandas as pd
 from tqdm import tqdm
 from datasets import Dataset
 from colorama import Fore, Style
@@ -30,6 +32,7 @@ class GeneralText2SQL(Bench):
         self.total = 0
         self.eval_set = self.dataset[self.split]
         self.initialize()
+        self.sql_results = []
 
     def get_dataset(self) -> Dataset:
         """Returns dataset for the task or an iterable of any object, that get_prompt can handle"""
@@ -70,7 +73,12 @@ class GeneralText2SQL(Bench):
         return {"table_schema": schema, "user_query": question}
 
     def get_output(self, row: dict):
-        return {"SQL": row["SQL"], "db_id": row["db_id"], 'label': row["SQL"]}
+        return {
+            "SQL": row["SQL"], 
+            "db_id": row["db_id"], 
+            "label": row["SQL"],
+            "question_id": row["question_id"]     
+        }
 
     def process_results(self, generations: str, label: dict, return_details: bool = False, **kwargs):
         """Takes the list of LM generations and evaluates them against ground truth references,
@@ -81,7 +89,16 @@ class GeneralText2SQL(Bench):
             list of str containing refrences
         """
         db_path = os.path.join(self.db_path, label['db_id'], label['db_id'] + '.sqlite')
-        correct = execute_model(generations, label['SQL'], db_path)[0]
+        res = execute_model(generations, label['SQL'], db_path)
+        
+        # for kaggle submission
+        pred_res = res.get("predicted_res", "")
+        self.sql_results.append({
+            "id": label["question_id"],
+            "result": self.hash_prediction(pred_res)
+        })
+        
+        correct = res.get("res", 0)
         self.n_correct += correct
         self.predictions.append(generations)
         self.references.append(label)
@@ -103,6 +120,31 @@ class GeneralText2SQL(Bench):
 
     def give_feedback(self, pred_res: dict) -> bool:
         return bool(pred_res["correct"])
+
+    def normalize_value(self, val):
+        if isinstance(val, float) and val.is_integer():
+            return int(val)
+        return val
+
+    def hash_prediction(self, res):
+        if type(res) is list:
+            # Normalize each tuple and each element within
+            res = [tuple(self.normalize_value(item) for item in t) for t in res]
+            res = [str(item) for item in res]
+            res = sorted(list(set(res)))
+            res = "||".join(res)
+        
+        # Hash the normalized frozenset
+        return hashlib.md5(res.encode()).hexdigest()
+
+    def save_output(self, output_path):
+        df = pd.DataFrame(self.sql_results)
+
+        # Ensure the parent directory exists
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+        # Save the DataFrame to the specified path
+        df.to_csv(output_path, index=False)
 
 # Manual testing
 if __name__ == "__main__":
