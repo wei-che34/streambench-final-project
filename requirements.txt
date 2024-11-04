@@ -12,3 +12,4 @@ accelerate
 bitsandbytes
 protobuf
 sentencepiece
+pandas
