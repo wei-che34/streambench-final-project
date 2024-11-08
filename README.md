@@ -82,14 +82,14 @@ To help you get started, we've provided some example implementations: (you may u
 
 1. Zero-shot Agent (non-streaming baseline, each question solved independently):
    ```
-   python -m examples.zeroshot --bench_name classification_public --model_name <model_name> --device <device>
-   python -m examples.zeroshot --bench_name sql_generation_public --model_name <model_name> --device <device>
+   python -m examples.zeroshot --bench_name classification_public --model_name <model_name> --device <device> --output_path <path_to_save_csv>
+   python -m examples.zeroshot --bench_name sql_generation_public --model_name <model_name> --device <device> --output_path <path_to_save_csv>
    ```
 
 2. Self-Streaming In-Context Learning (Self-StreamICL) Agent:
    ```
-   python -m examples.self_streamicl --bench_name classification_public --model_name <model_name> --device <device>
-   python -m examples.self_streamicl --bench_name sql_generation_public --model_name <model_name> --device <device>
+   python -m examples.self_streamicl --bench_name classification_public --model_name <model_name> --device <device> --output_path <path_to_save_csv>
+   python -m examples.self_streamicl --bench_name sql_generation_public --model_name <model_name> --device <device> --output_path <path_to_save_csv>
    ```
 
 3. Multi-Agentic-Memory Round-Robin (MAM-StreamICL) Agent:
@@ -106,12 +106,12 @@ Study these examples to understand different strategies for implementing your ow
 1. Implement your two agents in `main.py`.
 2. Test your implementation with different datasets:
    ```
-   python main.py --bench_name "classification_public"
-   python main.py --bench_name "sql_generation_public"
+   python main.py --bench_name "classification_public" --output_path <path_to_save_csv>
+   python main.py --bench_name "sql_generation_public" --output_path <path_to_save_csv>
    ```
    Replace `dataset_name` with the specific dataset you want to test (e.g., 'bird', 'spider', etc.).
 3. Ensure your code runs without errors and produces expected outputs.
-4. Submit your `main.py` file along with any additional files you've created.
+4. Submit the csv files you've created to the Kaggle competition pages.
 
 ## Additional Tips
 
