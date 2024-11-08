@@ -13,3 +13,4 @@ bitsandbytes
 protobuf
 sentencepiece
 pandas
+wandb
