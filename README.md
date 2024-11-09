@@ -101,6 +101,17 @@ These examples demonstrate different approaches to agent implementation:
 
 Study these examples to understand different strategies for implementing your own agent.
 
+### (Recommended) Use Weights & Biases to Track Your Experiments
+
+You can use Weights & Biases (`wandb`) to track your experiments. The `wandb` library will visualize the streaming performance over time, so you can easily compare the performance curves of different agents (see the figure below).
+
+![Figure 1](./assets/wandb_perf_curves.png)
+
+To use `wandb`, you can simply add the `--use_wandb` flag to your command. (Remember to login to `wandb` first by running `wandb login` in the terminal.)
+```
+python -m examples.zeroshot --use_wandb --bench_name <bench_name> --model_name <model_name> --device <device> --output_path <path_to_save_csv>
+```
+
 ## How to Submit
 
 1. Implement your two agents in `main.py`.
