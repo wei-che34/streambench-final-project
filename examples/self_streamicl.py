@@ -313,6 +313,7 @@ if __name__ == "__main__":
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--use_8bit', action='store_true')
     parser.add_argument('--output_path', type=str, default=None, help='path to save csv file for kaggle submission')
+    parser.add_argument('--use_wandb', action='store_true')
     args = parser.parse_args()
 
     if args.bench_name.startswith("classification"):
@@ -344,4 +345,4 @@ if __name__ == "__main__":
         }
     }
     agent = agent_name(llm_config)
-    main(agent, bench_cfg, debug=args.debug)
+    main(agent, bench_cfg, debug=args.debug, use_wandb=args.use_wandb, wandb_name=llm_config["exp_name"], wandb_config=llm_config)

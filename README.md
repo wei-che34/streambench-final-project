@@ -1,6 +1,10 @@
 # Can LLM learn with incoming streams of questions?
 Welcome to the ADL final project! This guide will help you set up your environment, prepare the datasets, and implement your LLM agent. Please read through all instructions carefully.
 
+**(New Feature)** Run with `wandb` to visualize the performance curves during streaming! See the corresponding [section](#recommended-use-weights--biases-to-track-your-experiments) for how to use it.
+
+![Figure 0](./assets/streambench_setting.png)
+
 ## Step 1: Setup Environment
 
 Ensure you have Python 3.10 or above installed on your system. You can check your Python version by running:
@@ -100,6 +104,17 @@ These examples demonstrate different approaches to agent implementation:
 - The Self-Streaming In-Context Learning Agent uses a RAG (Retrieval-Augmented Generation) approach to learn and improve its performance over time.
 
 Study these examples to understand different strategies for implementing your own agent.
+
+### (Recommended) Use Weights & Biases to Track Your Experiments
+
+You can use Weights & Biases (`wandb`) to track your experiments. The `wandb` library will visualize the streaming performance over time, so you can easily compare the performance curves of different agents (see the figure below).
+
+![Figure 1](./assets/wandb_perf_curves.png)
+
+To use `wandb`, you can simply add the `--use_wandb` flag to your command. (Remember to login to `wandb` first by running `wandb login` in the terminal.)
+```
+python -m examples.zeroshot --use_wandb --bench_name <bench_name> --model_name <model_name> --device <device> --output_path <path_to_save_csv>
+```
 
 ## How to Submit
 
