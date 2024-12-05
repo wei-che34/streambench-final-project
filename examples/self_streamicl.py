@@ -7,7 +7,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import warnings
 from transformers import logging as transformers_logging
 
-from utils import RAG, strip_all_lines
+from utils import RAG, strip_all_lines, self_RAG
 
 # Ignore warning messages from transformers
 warnings.filterwarnings("ignore")
@@ -40,7 +40,8 @@ class LocalModelAgent(Agent):
                 device_map=config["device"]
             )
         self.tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
-        self.rag = RAG(config["rag"])
+        # self.rag = RAG(config["rag"])
+        self.rag = self_RAG(config["rag"])
         # Save the streaming inputs and outputs for iterative improvement
         self.inputs = list()
         self.self_outputs = list()
@@ -160,10 +161,19 @@ class ClassificationAgent(LocalModelAgent):
             print(Fore.YELLOW + "No RAG shots found. Using zeroshot prompt." + Fore.RESET)
             prompt = prompt_zeroshot
         
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt}
-        ]
+        if self.llm_config["model_name"] in ["google/gemma-2-2b-it", "google/gemma-2-9b-it"]:
+            # combine the system prompt and user prompt
+            combined_prompt = f"{system_prompt}\n{prompt}"
+            messages = [
+                {"role": "user", "content": combined_prompt}
+            ]
+            
+        else:
+            messages = [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ]
+
         response = self.generate_response(messages)
         prediction = self.extract_label(response, label2desc)
         
@@ -191,7 +201,11 @@ class ClassificationAgent(LocalModelAgent):
         else:
             if len(numbers) > 1:
                 print(Fore.YELLOW + f"Extracted numbers {numbers} is not exactly one. Select the first one." + Style.RESET_ALL)
-                prediction = numbers[0]
+                if int(numbers[0]) in label2desc:
+                    prediction = numbers[0]
+                else:
+                    print(Fore.RED + f"Prediction {pred_text} not found in the label set. Randomly select one." + Style.RESET_ALL)
+                    prediction = random.choice(list(label2desc.keys()))
             else:
                 print(Fore.RED + f"Prediction {pred_text} has no extracted numbers. Randomly select one." + Style.RESET_ALL)
                 prediction = random.choice(list(label2desc.keys()))
@@ -266,11 +280,20 @@ class SQLGenerationAgent(LocalModelAgent):
         else:
             print(Fore.YELLOW + "No RAG shots found. Using zeroshot prompt." + Fore.RESET)
             prompt = prompt_zeroshot
-        
-        messages = [
-            {"role": "system", "content": self.get_system_prompt()},
-            {"role": "user", "content": prompt}
-        ]
+
+        if self.llm_config["model_name"] in ["google/gemma-2-2b-it", "google/gemma-2-9b-it"]:
+            # combine the system prompt and user prompt
+            combined_prompt = f"{self.get_system_prompt()}\n{prompt}"
+            messages = [
+                {"role": "user", "content": combined_prompt}
+            ]
+            
+        else:
+            messages = [
+                {"role": "system", "content": self.get_system_prompt()},
+                {"role": "user", "content": prompt}
+            ]
+            
         pred_text = self.generate_response(messages)
         sql_code = self.parse_sql(pred_text)
         
@@ -340,8 +363,10 @@ if __name__ == "__main__":
         'rag': {
             'embedding_model': 'BAAI/bge-base-en-v1.5',
             'seed': 42,
-            "top_k": 16,
-            "order": "similar_at_top"
+            # "top_k": 16,
+            "top_k": 8,
+            "order": "similar_at_top",
+            "gamma": 0.9,
         }
     }
     agent = agent_name(llm_config)
