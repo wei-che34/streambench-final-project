@@ -171,3 +171,4 @@ spider
 wandb
 *.ipynb
 data/*
+*.csv
