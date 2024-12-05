@@ -134,6 +134,106 @@ def strip_all_lines(s: str) -> str:
     """Remove all leading and trailing spaces of each line in the string."""
     return '\n'.join([line.strip() for line in s.splitlines()])
 
+class self_RAG:
+
+    def __init__(self, rag_config: dict) -> None:
+        self.tokenizer = AutoTokenizer.from_pretrained(rag_config["embedding_model"])
+        self.embed_model = AutoModel.from_pretrained(rag_config["embedding_model"]).eval()
+        
+        self.index = None
+        self.id2evidence = dict()
+        self.embed_dim = len(self.encode_data("Test embedding size"))
+        self.insert_acc = 0
+        
+        self.seed = rag_config["seed"]
+        self.top_k = rag_config["top_k"]
+        self.gamma = rag_config["gamma"]
+        orders = {member.value for member in RetrieveOrder}
+        assert rag_config["order"] in orders
+        self.retrieve_order = rag_config["order"]
+        random.seed(self.seed)
+        
+        self.create_faiss_index()
+        # TODO: make a file to save the inserted rows
+
+    def create_faiss_index(self):
+        # Create a FAISS index
+        self.index = faiss.IndexFlatL2(self.embed_dim)
+
+    def encode_data(self, sentence: str) -> np.ndarray:
+        # Tokenize the sentence
+        encoded_input = self.tokenizer([sentence], padding=True, truncation=True, return_tensors="pt")
+        # Compute token embeddings
+        with torch.no_grad():
+            model_output = self.embed_model(**encoded_input)
+            # Perform pooling. In this case, cls pooling.
+            sentence_embeddings = model_output[0][:, 0]
+        feature = sentence_embeddings.numpy()[0]
+        norm = np.linalg.norm(feature)
+        return feature / norm
+
+    def insert(self, key: str, value: str) -> None:
+        """Use the key text as the embedding for future retrieval of the value text."""
+        embedding = self.encode_data(key).astype('float32')  # Ensure the data type is float32
+        self.index.add(np.expand_dims(embedding, axis=0))
+        self.id2evidence[str(self.insert_acc)] = value
+        self.insert_acc += 1
+
+    def retrieve(self, query: str, top_k: int) -> list[str]:
+        """Retrieve top-k text chunks"""
+        embedding = self.encode_data(query).astype('float32')  # Ensure the data type is float32
+        top_k = min(top_k, self.insert_acc)
+        distances, indices = self.index.search(np.expand_dims(embedding, axis=0), top_k)
+        distances = distances[0].tolist()
+        indices = indices[0].tolist()
+        
+        results = [{'link': str(idx), '_score': {'faiss': dist}} for dist, idx in zip(distances, indices)]
+
+        # Adaptive k selection (based on similarity score drop)
+        similarity_ratios = [np.log(distances[i] / distances[i+1]) if i+1 < len(distances) else 0 for i in range(len(distances)-1)]
+
+        # Find where similarity ratio exceeds gamma and truncate k
+        truncation_index = next((i for i, ratio in enumerate(similarity_ratios) if ratio > self.gamma), len(distances)-1)
+        top_k = truncation_index + 1  # Adaptively select the new k
+
+        # Re-create results with truncated k
+        results = [{'link': str(idx), '_score': {'faiss': dist}} for dist, idx in zip(distances[:top_k], indices[:top_k])]
+
+        # Re-order the sequence based on self.retrieve_order
+        if self.retrieve_order == RetrieveOrder.SIMILAR_AT_BOTTOM:
+            results = list(reversed(results))
+        elif self.retrieve_order == RetrieveOrder.RANDOM:
+            random.shuffle(results)
+        
+        text_list = [self.id2evidence[result["link"]] for result in results]
+        return text_list
+
+def extract_json_string(res: str) -> str:
+    """Extract the first valid json string from the response string (of LLMs).
+    
+    Return '' (empty string) if not found. Raise ValueError if an } is found before any {.
+    """
+    start, end = -1, -1
+    cnt = 0  # act as a representation of a stack of '{' '}' pairs
+    for i in range(len(res)):
+        ch = res[i]
+        if ch == '{':
+            if cnt == 0:  # the first time '{' is encountered
+                start = i
+            cnt += 1
+        elif ch == '}':
+            if cnt <= 0:
+                raise ValueError("found } before any { appears")
+            cnt -= 1
+            if cnt == 0:  # found the end index
+                end = i
+                break
+    return res[start:end+1]
+
+def strip_all_lines(s: str) -> str:
+    """Remove all leading and trailing spaces of each line in the string."""
+    return '\n'.join([line.strip() for line in s.splitlines()])
+
 if __name__ == "__main__":
 # Initialize RAG with a configuration dictionary
     rag_config = {
