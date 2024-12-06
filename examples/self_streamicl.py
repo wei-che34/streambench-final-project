@@ -364,7 +364,7 @@ if __name__ == "__main__":
             'embedding_model': 'BAAI/bge-base-en-v1.5',
             'seed': 42,
             # "top_k": 16,
-            "top_k": 8,
+            "top_k": 7,
             "order": "similar_at_top",
             "gamma": 0.9,
         }

@@ -195,6 +195,7 @@ class self_RAG:
         # Find where similarity ratio exceeds gamma and truncate k
         truncation_index = next((i for i, ratio in enumerate(similarity_ratios) if ratio > self.gamma), len(distances)-1)
         top_k = truncation_index + 1  # Adaptively select the new k
+        print(f"Adaptive k selection: {top_k}")
 
         # Re-create results with truncated k
         results = [{'link': str(idx), '_score': {'faiss': dist}} for dist, idx in zip(distances[:top_k], indices[:top_k])]
