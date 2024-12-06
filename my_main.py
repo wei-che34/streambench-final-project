@@ -36,45 +36,38 @@ class LocalModelAgent(Agent):
         # Save the streaming inputs and outputs for iterative improvement
         self.inputs = list()
         self.self_outputs = list()
-    
-    def load_model(self, agent_num: int):
-        """
-        Lazily load the specified model to GPU if not already loaded.
-        """
-        if agent_num not in self.models:
+
+        # Preload all models to CPU
+        for agent_num, model_path in self.model_paths.items():
             if self.llm_config["use_8bit"]:
                 quantization_config = BitsAndBytesConfig(
                     load_in_8bit=True,
                     llm_int8_has_fp16_weight=False
                 )
                 self.models[agent_num] = AutoModelForCausalLM.from_pretrained(
-                    self.model_paths[agent_num],
+                    model_path,
                     config=quantization_config,
-                    device_map=self.llm_config["device"]
+                    device_map="cpu"
                 )
             else:
                 self.models[agent_num] = AutoModelForCausalLM.from_pretrained(
-                    self.model_paths[agent_num],
-                    device_map=self.llm_config["device"]
+                    model_path,
+                    device_map="cpu"
                 )
             self.models[agent_num].eval()
 
-    def unload_model(self, agent_num: int):
+    def move_model_to_device(self, agent_num: int, device: str):
         """
-        Remove the specified model from memory.
+        Move the specified model to the given device (e.g., "cuda" or "cpu").
         """
-        if agent_num in self.models:
-            self.models[agent_num].to("cpu")
-            del self.models[agent_num]
-            gc.collect()
-            torch.cuda.empty_cache()
+        self.models[agent_num].to(device)
 
     def generate_response(self, messages: list, agent_num: int) -> str:
         """
         Generate a response using the local model of the corresponding agent_num.
         """
-        # Load the required model and tokenizer
-        self.load_model(agent_num)
+        # Move the required model to GPU
+        self.move_model_to_device(agent_num, device=self.llm_config["device"])
         model = self.models[agent_num]
         tokenizer = self.tokenizers[agent_num]
 
@@ -95,8 +88,9 @@ class LocalModelAgent(Agent):
         ]
         response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-        # Unload the model after usage
-        self.unload_model(agent_num)
+        # Move the model back to CPU after usage
+        self.move_model_to_device(agent_num, device="cpu")
+        torch.cuda.empty_cache()
 
         return response    
 
